@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using BookCatalog.Business.Services;
+﻿using BookCatalog.Data;
 using BookCatalog.Models.DTOs;
+using BookCatalog.Models.Entities;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookCatalog.API.Controllers
 {
@@ -8,48 +10,51 @@ namespace BookCatalog.API.Controllers
     [ApiController]
     public class AuthorsController : ControllerBase
     {
-        private readonly IAuthorService _service;
+        private readonly AppDbContext _context;
 
-        public AuthorsController(IAuthorService service)
+        public AuthorsController(AppDbContext context)
         {
-            _service = service;
+            _context = context;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<AuthorDto>>> Get()
+        public async Task<IActionResult> Get()
         {
-            var authors = await _service.GetAllAsync();
+            var authors = await _context.Authors
+                .Select(a => new AuthorDto { Id = a.Id, Name = a.Name, Biography = a.Biography })
+                .ToListAsync();
             return Ok(authors);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<AuthorDto>> Get(int id)
-        {
-            var author = await _service.GetByIdAsync(id);
-            if (author == null) return NotFound();
-            return Ok(author);
-        }
-
         [HttpPost]
-        public async Task<IActionResult> Post(AuthorDto authorDto)
+        public async Task<IActionResult> Post([FromBody] AuthorDto authorDto)
         {
-            await _service.AddAsync(authorDto);
-            return CreatedAtAction(nameof(Get), new { id = authorDto.Id }, authorDto);
-        }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, AuthorDto authorDto)
-        {
-            if (id != authorDto.Id) return BadRequest();
-            await _service.UpdateAsync(authorDto);
-            return NoContent();
+            var author = new Author
+            {
+                Name = authorDto.Name,
+                Biography = authorDto.Biography
+            };
+
+            _context.Authors.Add(author);
+            await _context.SaveChangesAsync();
+
+            authorDto.Id = author.Id; // EF generates Id
+            return CreatedAtAction(nameof(Get), new { id = authorDto.Id }, authorDto);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            await _service.DeleteAsync(id);
+            var author = await _context.Authors.FindAsync(id);
+            if (author == null) return NotFound();
+
+            _context.Authors.Remove(author);
+            await _context.SaveChangesAsync();
+
             return NoContent();
         }
     }
 }
+

@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using BookCatalog.Business.Services;
+﻿using BookCatalog.Data;
 using BookCatalog.Models.DTOs;
+using BookCatalog.Models.Entities;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookCatalog.API.Controllers
 {
@@ -8,48 +10,46 @@ namespace BookCatalog.API.Controllers
     [ApiController]
     public class CategoriesController : ControllerBase
     {
-        private readonly ICategoryService _service;
+        private readonly AppDbContext _context;
 
-        public CategoriesController(ICategoryService service)
+        public CategoriesController(AppDbContext context)
         {
-            _service = service;
+            _context = context;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CategoryDto>>> Get()
+        public async Task<IActionResult> Get()
         {
-            var categories = await _service.GetAllAsync();
+            var categories = await _context.Categories
+                .Select(c => new CategoryDto { Id = c.Id, Name = c.Name })
+                .ToListAsync();
             return Ok(categories);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<CategoryDto>> Get(int id)
-        {
-            var category = await _service.GetByIdAsync(id);
-            if (category == null) return NotFound();
-            return Ok(category);
-        }
-
         [HttpPost]
-        public async Task<IActionResult> Post(CategoryDto categoryDto)
+        public async Task<IActionResult> Post([FromBody] CategoryDto categoryDto)
         {
-            await _service.AddAsync(categoryDto);
-            return CreatedAtAction(nameof(Get), new { id = categoryDto.Id }, categoryDto);
-        }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, CategoryDto categoryDto)
-        {
-            if (id != categoryDto.Id) return BadRequest();
-            await _service.UpdateAsync(categoryDto);
-            return NoContent();
+            var category = new Category { Name = categoryDto.Name };
+            _context.Categories.Add(category);
+            await _context.SaveChangesAsync();
+
+            categoryDto.Id = category.Id;
+            return CreatedAtAction(nameof(Get), new { id = categoryDto.Id }, categoryDto);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            await _service.DeleteAsync(id);
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null) return NotFound();
+
+            _context.Categories.Remove(category);
+            await _context.SaveChangesAsync();
+
             return NoContent();
         }
     }
 }
+

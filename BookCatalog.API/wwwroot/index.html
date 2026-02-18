@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Catalog App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Book Catalog Dashboard</h1>
+
+        <!-- -------------------- Authors -------------------- -->
+        <section>
+            <h2>Authors</h2>
+            <form id="authorForm">
+                <input type="text" id="authorName" placeholder="Author Name" required>
+                <input type="text" id="authorBio" placeholder="Biography (optional)">
+                <button type="submit">Add Author</button>
+            </form>
+            <table id="authorsTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Biography</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <!-- -------------------- Categories -------------------- -->
+        <section>
+            <h2>Categories</h2>
+            <form id="categoryForm">
+                <input type="text" id="categoryName" placeholder="Category Name" required>
+                <button type="submit">Add Category</button>
+            </form>
+            <table id="categoriesTable">
+                <thead>
+                    <tr>
+                        <th>Category Name</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <!-- -------------------- Books -------------------- -->
+        <section>
+            <h2>Books</h2>
+            <form id="bookForm">
+                <input type="text" id="bookTitle" placeholder="Book Title" required>
+                <select id="bookAuthor" required></select>
+                <select id="bookCategory" required></select>
+                <input type="number" id="bookPrice" placeholder="Price" step="0.01" required>
+                <button type="submit">Add Book</button>
+            </form>
+            <table id="booksTable">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Category</th>
+                        <th>Price ($)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
