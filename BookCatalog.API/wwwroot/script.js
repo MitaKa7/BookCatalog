@@ -18,6 +18,11 @@ const authState = {
 
 let unauthorizedAlreadyHandled = false;
 
+// Променливи, които пазят ID-то на елемента, който редактираме в момента
+let editingAuthorId = null;
+let editingCategoryId = null;
+let editingBookId = null;
+
 function parseJwt(token) {
     try {
         if (!token || typeof token !== 'string') return null;
@@ -328,6 +333,11 @@ function logout() {
 
     unauthorizedAlreadyHandled = false;
 
+    // Reset editing state
+    editingAuthorId = null;
+    editingCategoryId = null;
+    editingBookId = null;
+
     updateAuthUI();
     applyRoleBasedUI();
     setStatsPlaceholder('—');
@@ -389,7 +399,7 @@ function ensureActionsHeader(tableId, key, show) {
         const th = document.createElement('th');
         th.textContent = 'Действия';
         th.setAttribute('data-actions', key);
-        th.style.width = '140px';
+        th.style.width = '170px'; // Увеличаваме малко ширината заради 2та бутона
         theadTr.appendChild(th);
     } else if (!show && existing) {
         existing.remove();
@@ -406,7 +416,8 @@ function applyRoleBasedUI() {
     const profileRoles = document.getElementById('profileRoles');
     if (profileRoles) profileRoles.textContent = roleText;
 
-    const canCreate = roles.includes('Editor') || roles.includes('Admin');
+    // Включваме Reader-а тук, за да отключим всички форми едновременно (могат да създават)
+    const canCreate = roles.includes('Editor') || roles.includes('Admin') || roles.includes('Reader');
 
     const authorForm = document.getElementById('authorForm');
     const categoryForm = document.getElementById('categoryForm');
@@ -423,12 +434,13 @@ function applyRoleBasedUI() {
         });
     });
 
-    // Delete бутони за ВСИЧКО само за Admin
-    const showAdminActions = isAdmin();
+    // Бутоните за Действия се показват за Admin (или Editor, ако се ползва)
+    const showAdminActions = isEditorOrAdmin();
     ensureActionsHeader('#authorsTable', 'authors', showAdminActions);
     ensureActionsHeader('#categoriesTable', 'categories', showAdminActions);
     ensureActionsHeader('#booksTable', 'books', showAdminActions);
 }
+
 function updateAuthUI() {
     const loggedIn = isLoggedIn();
 
@@ -488,13 +500,17 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
 });
 
 document.getElementById('logoutBtn')?.addEventListener('click', logout);
+
+
+// --- БУТОНИ ЗА ДЕЙСТВИЯ ---
+
 function makeDeleteButton(onClick) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = 'Изтрий';
     btn.style.cssText = `
-    padding: 8px 10px;
-    border-radius: 10px;
+    padding: 6px 10px;
+    border-radius: 6px;
     border: 1px solid rgba(0,0,0,.15);
     background: #991b1b;
     color: white;
@@ -504,70 +520,78 @@ function makeDeleteButton(onClick) {
     return btn;
 }
 
+function makeEditButton(onClick) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Редактирай';
+    btn.style.cssText = `
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,.15);
+    background: #0ea5e9;
+    color: white;
+    cursor: pointer;
+    margin-right: 5px;
+  `;
+    btn.addEventListener('click', onClick);
+    return btn;
+}
+
+// --- ФУНКЦИИ ЗА ТРИЕНЕ ---
+
 async function deleteAuthor(authorId) {
     if (!confirm('Сигурен ли си, че искаш да изтриеш автора?')) return;
-
     const res = await fetchWithAuth(`${apiBase}/authors/${authorId}`, { method: 'DELETE' });
-
     if (res.status === 403) {
         toast('Само Admin може да трие автори.', 'error');
         return;
     }
-
     if (res.ok) {
         toast('Авторът е изтрит.', 'success');
         await initData();
         return;
     }
-
     const msg = await res.text().catch(() => '');
     toast('Грешка при триене: ' + (msg || res.status), 'error', 3500);
 }
 
 async function deleteCategory(categoryId) {
     if (!confirm('Сигурен ли си, че искаш да изтриеш категорията?')) return;
-
     const res = await fetchWithAuth(`${apiBase}/categories/${categoryId}`, { method: 'DELETE' });
-
     if (res.status === 403) {
         toast('Само Admin може да трие категории.', 'error');
         return;
     }
-
     if (res.ok) {
         toast('Категорията е изтрита.', 'success');
         await initData();
         return;
     }
-
     const msg = await res.text().catch(() => '');
     toast('Грешка при триене: ' + (msg || res.status), 'error', 3500);
 }
 
 async function deleteBook(bookId) {
     if (!confirm('Сигурен ли си, че искаш да изтриеш книгата?')) return;
-
     const res = await fetchWithAuth(`${apiBase}/books/${bookId}`, { method: 'DELETE' });
-
     if (res.status === 403) {
         toast('Само Admin може да трие книги.', 'error');
         return;
     }
-
     if (res.ok) {
         toast('Книгата е изтрита.', 'success');
         await initData();
         return;
     }
-
     const msg = await res.text().catch(() => '');
     toast('Грешка при триене: ' + (msg || res.status), 'error', 3500);
 }
 
+// --- ЗАРЕЖДАНЕ НА ДАННИ В ТАБЛИЦИТЕ ---
+
 async function loadAuthors() {
     const res = await fetchWithAuth(`${apiBase}/authors`);
     if (!res.ok) return null;
-
     const authors = await safeJson(res);
     if (!Array.isArray(authors)) return null;
 
@@ -577,7 +601,7 @@ async function loadAuthors() {
     if (tbody) tbody.innerHTML = '';
     if (select) select.innerHTML = '<option value="" disabled selected>Избери автор</option>';
 
-    const showActions = isAdmin();
+    const showActions = isEditorOrAdmin();
     ensureActionsHeader('#authorsTable', 'authors', showActions);
 
     authors.forEach(a => {
@@ -595,7 +619,21 @@ async function loadAuthors() {
 
             if (showActions) {
                 const actionsTd = document.createElement('td');
+
+                // Бутон Редактирай
+                actionsTd.appendChild(makeEditButton(() => {
+                    editingAuthorId = a.id;
+                    document.getElementById('authorName').value = a.name || '';
+                    document.getElementById('authorBio').value = a.biography || '';
+
+                    const btn = document.querySelector('#authorForm button[type="submit"]');
+                    if (btn) btn.textContent = 'Запази промените';
+                    document.getElementById('authorForm').scrollIntoView({ behavior: 'smooth' });
+                }));
+
+                // Бутон Изтрий
                 actionsTd.appendChild(makeDeleteButton(() => deleteAuthor(a.id)));
+
                 tr.appendChild(actionsTd);
             }
 
@@ -616,7 +654,6 @@ async function loadAuthors() {
 async function loadCategories() {
     const res = await fetchWithAuth(`${apiBase}/categories`);
     if (!res.ok) return null;
-
     const categories = await safeJson(res);
     if (!Array.isArray(categories)) return null;
 
@@ -626,7 +663,7 @@ async function loadCategories() {
     if (tbody) tbody.innerHTML = '';
     if (select) select.innerHTML = '<option value="" disabled selected>Избери категория</option>';
 
-    const showActions = isAdmin();
+    const showActions = isEditorOrAdmin();
     ensureActionsHeader('#categoriesTable', 'categories', showActions);
 
     categories.forEach(c => {
@@ -640,6 +677,18 @@ async function loadCategories() {
 
             if (showActions) {
                 const actionsTd = document.createElement('td');
+
+                // Бутон Редактирай
+                actionsTd.appendChild(makeEditButton(() => {
+                    editingCategoryId = c.id;
+                    document.getElementById('categoryName').value = c.name || '';
+
+                    const btn = document.querySelector('#categoryForm button[type="submit"]');
+                    if (btn) btn.textContent = 'Запази промените';
+                    document.getElementById('categoryForm').scrollIntoView({ behavior: 'smooth' });
+                }));
+
+                // Бутон Изтрий
                 actionsTd.appendChild(makeDeleteButton(() => deleteCategory(c.id)));
                 tr.appendChild(actionsTd);
             }
@@ -661,14 +710,13 @@ async function loadCategories() {
 async function loadBooks() {
     const res = await fetchWithAuth(`${apiBase}/books`);
     if (!res.ok) return null;
-
     const books = await safeJson(res);
     if (!Array.isArray(books)) return null;
 
     const tbody = document.querySelector('#booksTable tbody');
     if (tbody) tbody.innerHTML = '';
 
-    const showActions = isAdmin();
+    const showActions = isEditorOrAdmin();
     ensureActionsHeader('#booksTable', 'books', showActions);
 
     books.forEach(b => {
@@ -695,7 +743,23 @@ async function loadBooks() {
 
         if (showActions) {
             const actionsTd = document.createElement('td');
+
+            // Бутон Редактирай
+            actionsTd.appendChild(makeEditButton(() => {
+                editingBookId = b.id;
+                document.getElementById('bookTitle').value = b.title || '';
+                document.getElementById('bookAuthor').value = b.authorId || '';
+                document.getElementById('bookCategory').value = b.categoryId || '';
+                document.getElementById('bookPrice').value = b.price || '';
+
+                const btn = document.querySelector('#bookForm button[type="submit"]');
+                if (btn) btn.textContent = 'Запази промените';
+                document.getElementById('bookForm').scrollIntoView({ behavior: 'smooth' });
+            }));
+
+            // Бутон Изтрий
             actionsTd.appendChild(makeDeleteButton(() => deleteBook(b.id)));
+
             tr.appendChild(actionsTd);
         }
 
@@ -705,11 +769,14 @@ async function loadBooks() {
     return books;
 }
 
+// --- СЪБМИТВАНЕ НА ФОРМИТЕ (СЪЗДАВАНЕ И РЕДАКЦИЯ) ---
 
+// Форма за Автори
 document.getElementById('authorForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!isEditorOrAdmin()) {
-        toast('Само Editor/Admin може да добавя автори.', 'error');
+    const roles = getEffectiveRoles();
+    if (!roles.includes('Editor') && !roles.includes('Admin') && !roles.includes('Reader')) {
+        toast('Нямаш права да добавяш/редактираш автори.', 'error');
         return;
     }
 
@@ -718,56 +785,88 @@ document.getElementById('authorForm')?.addEventListener('submit', async (e) => {
         biography: document.getElementById('authorBio').value.trim()
     };
 
-    const res = await fetchWithAuth(`${apiBase}/authors`, {
-        method: 'POST',
+    const isEditing = editingAuthorId !== null;
+    if (isEditing) author.id = editingAuthorId;
+
+    const url = isEditing ? `${apiBase}/authors/${editingAuthorId}` : `${apiBase}/authors`;
+    const method = isEditing ? 'PUT' : 'POST';
+
+    const res = await fetchWithAuth(url, {
+        method: method,
         body: JSON.stringify(author),
         headers: { 'Content-Type': 'application/json' }
     });
 
     if (res.status === 403) {
-        toast('Нямаш права да добавяш автори.', 'error');
+        toast('Сървърът отказа достъп (нямаш права).', 'error');
         return;
     }
 
     if (res.ok) {
         e.target.reset();
-        toast('Авторът е добавен.', 'success');
+        editingAuthorId = null;
+        const btn = document.querySelector('#authorForm button[type="submit"]');
+        if (btn) btn.textContent = 'Добави автор';
+
+        toast(isEditing ? 'Авторът е обновен.' : 'Авторът е добавен.', 'success');
         await initData();
     } else {
         const msg = await res.text().catch(() => '');
-        toast('Грешка при добавяне на автор: ' + (msg || res.status), 'error', 3500);
+        toast('Грешка: ' + (msg || res.status), 'error', 3500);
     }
 });
 
+// Форма за Категории
 document.getElementById('categoryForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!isEditorOrAdmin()) {
-        toast('Само Editor/Admin може да добавя категории.', 'error');
+    const roles = getEffectiveRoles();
+    if (!roles.includes('Editor') && !roles.includes('Admin') && !roles.includes('Reader')) {
+        toast('Нямаш права да добавяш/редактираш категории.', 'error');
         return;
     }
 
-    const category = { name: document.getElementById('categoryName').value.trim() };
+    const category = {
+        name: document.getElementById('categoryName').value.trim()
+    };
 
-    const res = await fetchWithAuth(`${apiBase}/categories`, {
-        method: 'POST',
+    const isEditing = editingCategoryId !== null;
+    if (isEditing) category.id = editingCategoryId;
+
+    const url = isEditing ? `${apiBase}/categories/${editingCategoryId}` : `${apiBase}/categories`;
+    const method = isEditing ? 'PUT' : 'POST';
+
+    const res = await fetchWithAuth(url, {
+        method: method,
         body: JSON.stringify(category),
         headers: { 'Content-Type': 'application/json' }
     });
 
+    if (res.status === 403) {
+        toast('Сървърът отказа достъп (нямаш права).', 'error');
+        return;
+    }
+
     if (res.ok) {
         e.target.reset();
-        toast('Категорията е добавена.', 'success');
+        editingCategoryId = null;
+        const btn = document.querySelector('#categoryForm button[type="submit"]');
+        if (btn) btn.textContent = 'Добави категория';
+
+        toast(isEditing ? 'Категорията е обновена.' : 'Категорията е добавена.', 'success');
         await initData();
     } else {
         const msg = await res.text().catch(() => '');
-        toast('Грешка при добавяне на категория: ' + (msg || res.status), 'error', 3500);
+        toast('Грешка: ' + (msg || res.status), 'error', 3500);
     }
 });
 
+// Форма за Книги
 document.getElementById('bookForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!isEditorOrAdmin()) {
-        toast('Само Editor/Admin може да добавя книги.', 'error');
+
+    const roles = getEffectiveRoles();
+    if (!roles.includes('Editor') && !roles.includes('Admin') && !roles.includes('Reader')) {
+        toast('Нямаш права да добавяш/редактираш книги.', 'error');
         return;
     }
 
@@ -781,23 +880,38 @@ document.getElementById('bookForm')?.addEventListener('submit', async (e) => {
         price: parseFloat(document.getElementById('bookPrice').value)
     };
 
-    const res = await fetchWithAuth(`${apiBase}/books`, {
-        method: 'POST',
+    const isEditing = editingBookId !== null;
+    if (isEditing) book.id = editingBookId;
+
+    const url = isEditing ? `${apiBase}/books/${editingBookId}` : `${apiBase}/books`;
+    const method = isEditing ? 'PUT' : 'POST';
+
+    const res = await fetchWithAuth(url, {
+        method: method,
         body: JSON.stringify(book),
         headers: { 'Content-Type': 'application/json' }
     });
 
+    if (res.status === 403) {
+        toast('Сървърът отказа достъп (нямаш права).', 'error');
+        return;
+    }
+
     if (res.ok) {
         e.target.reset();
-        toast('Книгата е добавена.', 'success');
+        editingBookId = null;
+        const btn = document.querySelector('#bookForm button[type="submit"]');
+        if (btn) btn.textContent = 'Добави книга';
+
+        toast(isEditing ? 'Книгата е обновена.' : 'Книгата е добавена.', 'success');
         await initData();
     } else {
         const msg = await res.text().catch(() => '');
-        toast('Грешка при добавяне на книга: ' + (msg || res.status), 'error', 3500);
+        toast('Грешка: ' + (msg || res.status), 'error', 3500);
     }
 });
 
-
+// Инициализация на данните
 async function initData() {
     if (!isLoggedIn()) {
         setStatsPlaceholder('—');

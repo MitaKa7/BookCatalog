@@ -53,11 +53,18 @@ namespace BookCatalog.API
             });
 
             /* =====================================================
-               DATABASE
+               DATABASE (Updated with EnableRetryOnFailure)
             ===================================================== */
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(
-                    builder.Configuration.GetConnectionString("DefaultConnection")));
+                    builder.Configuration.GetConnectionString("DefaultConnection"),
+                    sqlServerOptionsAction: sqlOptions =>
+                    {
+                        sqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 5,
+                            maxRetryDelay: TimeSpan.FromSeconds(30),
+                            errorNumbersToAdd: null);
+                    }));
 
             /* =====================================================
                JWT SETTINGS (environment variable)
@@ -179,6 +186,12 @@ namespace BookCatalog.API
         private static async Task SeedRolesAndAdmin(WebApplication app)
         {
             using var scope = app.Services.CreateScope();
+
+            // Added safety check: Ensure the database is created and migrations are applied
+            // before trying to insert data into it.
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await dbContext.Database.MigrateAsync();
+
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<AppRole>>();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 

@@ -65,7 +65,7 @@ namespace BookCatalog.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Editor,Admin")]
+        [Authorize(Roles = "Editor,Admin,Reader")]
         public async Task<IActionResult> Post([FromBody] BookDto bookDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -108,7 +108,7 @@ namespace BookCatalog.API.Controllers
         }
 
         [HttpPut("{id:int}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Editor,Admin,Reader")]
         public async Task<IActionResult> Put(int id, [FromBody] BookDto bookDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
