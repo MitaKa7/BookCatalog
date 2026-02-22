@@ -19,9 +19,6 @@ namespace BookCatalog.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            /* =====================================================
-               CONTROLLERS + SWAGGER
-            ===================================================== */
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
@@ -52,32 +49,20 @@ namespace BookCatalog.API
                 });
             });
 
-            /* =====================================================
-               DATABASE (Updated with EnableRetryOnFailure)
-            ===================================================== */
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(
                     builder.Configuration.GetConnectionString("DefaultConnection"),
                     sqlServerOptionsAction: sqlOptions =>
                     {
-                        sqlOptions.EnableRetryOnFailure(
-                            maxRetryCount: 5,
-                            maxRetryDelay: TimeSpan.FromSeconds(30),
-                            errorNumbersToAdd: null);
+                        sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(30), null);
                     }));
 
-            /* =====================================================
-               JWT SETTINGS (environment variable)
-            ===================================================== */
             var secret = Environment.GetEnvironmentVariable("JWT__Secret")
                          ?? builder.Configuration["JWT:Secret"]
                          ?? throw new Exception("JWT Secret is not configured!");
             var issuer = builder.Configuration["JWT:Issuer"] ?? "BookCatalogAPI";
             var audience = builder.Configuration["JWT:Audience"] ?? "BookCatalogClient";
 
-            /* =====================================================
-               IDENTITY
-            ===================================================== */
             builder.Services.AddIdentity<AppUser, AppRole>(options =>
             {
                 options.Password.RequireDigit = true;
@@ -91,7 +76,6 @@ namespace BookCatalog.API
 
             builder.Services.ConfigureApplicationCookie(options =>
             {
-                // Prevent cookie redirects for API
                 options.Events.OnRedirectToLogin = ctx =>
                 {
                     ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -104,9 +88,6 @@ namespace BookCatalog.API
                 };
             });
 
-            /* =====================================================
-               JWT AUTHENTICATION
-            ===================================================== */
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -120,51 +101,32 @@ namespace BookCatalog.API
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-
                     ValidIssuer = issuer,
                     ValidAudience = audience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
-
-                    RoleClaimType = ClaimTypes.Role, // <- важно за [Authorize(Roles="Admin")]
+                    RoleClaimType = ClaimTypes.Role,
                     NameClaimType = ClaimTypes.Email
                 };
             });
 
-            /* =====================================================
-               AUTHORIZATION
-            ===================================================== */
             builder.Services.AddAuthorization(options =>
             {
-                options.DefaultPolicy = new AuthorizationPolicyBuilder(
-                        JwtBearerDefaults.AuthenticationScheme)
+                options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
                     .Build();
             });
 
-            /* =====================================================
-               REPOSITORIES
-            ===================================================== */
             builder.Services.AddScoped<IBookRepository, BookRepository>();
             builder.Services.AddScoped<IAuthorRepository, AuthorRepository>();
             builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-
-            /* =====================================================
-               SERVICES
-            ===================================================== */
             builder.Services.AddScoped<IBookService, BookService>();
             builder.Services.AddScoped<IAuthorService, AuthorService>();
             builder.Services.AddScoped<ICategoryService, CategoryService>();
 
             var app = builder.Build();
 
-            /* =====================================================
-               SEED ROLES + ADMIN
-            ===================================================== */
             await SeedRolesAndAdmin(app);
 
-            /* =====================================================
-               MIDDLEWARE
-            ===================================================== */
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -187,8 +149,6 @@ namespace BookCatalog.API
         {
             using var scope = app.Services.CreateScope();
 
-            // Added safety check: Ensure the database is created and migrations are applied
-            // before trying to insert data into it.
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             await dbContext.Database.MigrateAsync();
 
@@ -222,6 +182,28 @@ namespace BookCatalog.API
             {
                 if (!await userManager.IsInRoleAsync(admin, "Admin"))
                     await userManager.AddToRoleAsync(admin, "Admin");
+            }
+
+            var editorEmail = "editor@bookcatalog.local";
+            var editor = await userManager.FindByEmailAsync(editorEmail);
+
+            if (editor == null)
+            {
+                editor = new AppUser
+                {
+                    UserName = editorEmail,
+                    Email = editorEmail,
+                    FullName = "Content Editor"
+                };
+
+                var result = await userManager.CreateAsync(editor, "Editor123!");
+                if (result.Succeeded)
+                    await userManager.AddToRoleAsync(editor, "Editor");
+            }
+            else
+            {
+                if (!await userManager.IsInRoleAsync(editor, "Editor"))
+                    await userManager.AddToRoleAsync(editor, "Editor");
             }
         }
     }

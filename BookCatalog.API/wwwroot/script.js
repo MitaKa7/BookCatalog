@@ -18,7 +18,6 @@ const authState = {
 
 let unauthorizedAlreadyHandled = false;
 
-// Променливи, които пазят ID-то на елемента, който редактираме в момента
 let editingAuthorId = null;
 let editingCategoryId = null;
 let editingBookId = null;
