@@ -56,6 +56,10 @@ The system has different access levels. Unauthenticated users only see the login
 * Visual Studio or VS Code
 
 ### 🔧 Installation and Configuration
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/MitaKa7/BookCatalog.git](https://github.com/MitaKa7/BookCatalog.git)
+
 
 Apply migrations and update the database:
 Open BookCatalog.sln in Visual Studio. In the Package Manager Console, run the following command to create and update the database:
@@ -69,8 +73,5 @@ Run the backend application from Visual Studio (Run button or F5). The server wi
 
 Start the Frontend:
 
-Open the script.js file and ensure the apiBase variable matches the port your local server is running on.
+Open the script.js file and ensure the apiBase variable matches the port your local server is running on. Open the index.html file in your browser.
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/MitaKa7/BookCatalog.git](https://github.com/MitaKa7/BookCatalog.git)
