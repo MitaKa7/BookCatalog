@@ -19,7 +19,6 @@ namespace BookCatalog.Models.Entities
         [MaxLength(1000)]
         public string Biography { get; set; }
 
-        // Navigation Property (1 Author → Many Books)
         public ICollection<Book> Books { get; set; }
     }
 }

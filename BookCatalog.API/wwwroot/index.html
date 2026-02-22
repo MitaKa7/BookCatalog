@@ -1,74 +1,616 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="bg" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Catalog App</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0b1220" />
+    <title>BookManager Pro</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-    <div class="container">
-        <h1>📚 Book Catalog Dashboard</h1>
 
-        <!-- -------------------- Authors -------------------- -->
-        <section>
-            <h2>Authors</h2>
-            <form id="authorForm">
-                <input type="text" id="authorName" placeholder="Author Name" required>
-                <input type="text" id="authorBio" placeholder="Biography (optional)">
-                <button type="submit">Add Author</button>
-            </form>
-            <table id="authorsTable">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Biography</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </section>
+    <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-        <!-- -------------------- Categories -------------------- -->
-        <section>
-            <h2>Categories</h2>
-            <form id="categoryForm">
-                <input type="text" id="categoryName" placeholder="Category Name" required>
-                <button type="submit">Add Category</button>
-            </form>
-            <table id="categoriesTable">
-                <thead>
-                    <tr>
-                        <th>Category Name</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </section>
+    <section id="authSection" class="auth-container" aria-label="Автентикация">
+        <div class="auth-card" role="region" aria-labelledby="authTitle">
+            <header class="auth-header">
+                <div class="auth-brand" aria-hidden="true">
+                    <i class="fa-solid fa-book-open-reader"></i>
+                </div>
+                <div class="auth-headings">
+                    <h1 id="authTitle">BookManager Pro</h1>
+                    <p class="auth-subtitle">Управлявай лесно книги, автори и категории</p>
+                </div>
+            </header>
 
-        <!-- -------------------- Books -------------------- -->
-        <section>
-            <h2>Books</h2>
-            <form id="bookForm">
-                <input type="text" id="bookTitle" placeholder="Book Title" required>
-                <select id="bookAuthor" required></select>
-                <select id="bookCategory" required></select>
-                <input type="number" id="bookPrice" placeholder="Price" step="0.01" required>
-                <button type="submit">Add Book</button>
-            </form>
-            <table id="booksTable">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Author</th>
-                        <th>Category</th>
-                        <th>Price ($)</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </section>
-    </div>
+            <div class="auth-banner" role="note" aria-label="Съвет">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                <p>
+                    Демо UI: темата се пази локално. Натисни <kbd>?</kbd> в таблото за помощ и shortcut-и.
+                </p>
+            </div>
+
+            <div class="tabs" role="tablist" aria-label="Форми за вход и регистрация">
+                <button class="tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="loginForm" data-tab="loginForm">
+                    Вход
+                </button>
+                <button class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="registerForm" data-tab="registerForm">
+                    Регистрация
+                </button>
+            </div>
+
+            <div class="forms-wrapper">
+                <!-- Login Form -->
+                <form id="loginForm" class="auth-form active" autocomplete="on">
+                    <div class="field">
+                        <label class="sr-only" for="loginEmail">Имейл</label>
+                        <div class="input-icon">
+                            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                            <input type="email" id="loginEmail" placeholder="Имейл" autocomplete="email" required />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="sr-only" for="loginPassword">Парола</label>
+                        <div class="input-icon">
+                            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                            <input type="password" id="loginPassword" placeholder="Парола" autocomplete="current-password" required />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-block">
+                        <span>Влез</span>
+                        <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
+                    </button>
+
+                    <p class="auth-hint">
+                        Нямаш акаунт? Избери <strong>Регистрация</strong>.
+                    </p>
+                </form>
+
+                <form id="registerForm" class="auth-form" autocomplete="on">
+                    <div class="field">
+                        <label class="sr-only" for="registerFullName">Пълно име</label>
+                        <div class="input-icon">
+                            <i class="fa-solid fa-user" aria-hidden="true"></i>
+                            <input type="text" id="registerFullName" placeholder="Пълно име" autocomplete="name" required />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="sr-only" for="registerEmail">Имейл</label>
+                        <div class="input-icon">
+                            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                            <input type="email" id="registerEmail" placeholder="Имейл" autocomplete="email" required />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="sr-only" for="registerPassword">Парола</label>
+                        <div class="input-icon">
+                            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                            <input type="password" id="registerPassword" placeholder="Парола" autocomplete="new-password" required />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-secondary btn-block">
+                        <span>Регистрирай се</span>
+                        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                    </button>
+
+                    <p class="auth-hint">
+                        Вече имаш акаунт? Избери <strong>Вход</strong>.
+                    </p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section id="mainContent" class="dashboard-container" style="display:none;" aria-label="Табло">
+        <aside class="sidebar" aria-label="Странично меню">
+            <div class="brand" aria-label="BookManager">
+                <i class="fa-solid fa-book-open-reader" aria-hidden="true"></i>
+                <span>BookManager</span>
+            </div>
+
+            <nav class="nav-menu" aria-label="Навигация">
+                <a href="#section-books" class="nav-link active">
+                    <i class="fa-solid fa-book" aria-hidden="true"></i> <span>Книги</span>
+                </a>
+                <a href="#section-authors" class="nav-link">
+                    <i class="fa-solid fa-user-pen" aria-hidden="true"></i> <span>Автори</span>
+                </a>
+                <a href="#section-categories" class="nav-link">
+                    <i class="fa-solid fa-tags" aria-hidden="true"></i> <span>Категории</span>
+                </a>
+                <a href="#section-profile" class="nav-link">
+                    <i class="fa-solid fa-user" aria-hidden="true"></i> <span>Профил</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="helpBtn" class="btn-ghost" type="button">
+                    <i class="fa-regular fa-circle-question" aria-hidden="true"></i>
+                    <span>Помощ</span>
+                    <span class="kbd">?</span>
+                </button>
+            </div>
+
+            <div class="user-profile" aria-label="Потребител">
+                <div class="user-row">
+                    <div class="avatar" id="userAvatar" aria-hidden="true">A</div>
+                    <div class="user-info">
+                        <span class="name" id="userName">Име</span>
+                        <span class="email" id="userEmail">email@example.com</span>
+                    </div>
+                </div>
+
+                <div class="user-meta">
+                    <span class="badge" id="userRoleBadge" title="Роля">—</span>
+                    <span class="badge badge-muted" id="uiStatusBadge" title="UI статус">
+                        <i class="fa-solid fa-bolt"></i> UI Ready
+                    </span>
+                </div>
+
+                <button id="logoutBtn" class="btn-danger" type="button">
+                    <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                    <span>Изход</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content" role="main">
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <h2 class="page-title">BookManager Dashboard</h2>
+                    <p class="page-subtitle">Бърз преглед и управление на съдържанието</p>
+                </div>
+
+                <div class="top-bar-right">
+                    <div class="top-controls">
+                        <div class="search" role="search">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <input id="globalSearch" type="search" placeholder="Търси в текущата таблица..." autocomplete="off" />
+                            <button class="search-clear" id="clearSearchBtn" type="button" title="Изчисти търсенето" aria-label="Изчисти търсенето">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <div class="control-group" aria-label="Бързи действия">
+                            <button id="exportBtn" class="icon-btn" type="button" title="Експорт CSV">
+                                <i class="fa-solid fa-file-export" aria-hidden="true"></i>
+                            </button>
+
+                            <button id="refreshBtn" class="icon-btn" type="button" title="Опресни">
+                                <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                            </button>
+
+                            <button id="themeToggle" class="icon-btn" type="button" title="Смени тема">
+                                <i class="fa-solid fa-moon" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <section class="dashboard-cards" aria-label="Статистика">
+                <div class="card stat-card books-card" role="group" aria-label="Брой книги">
+                    <i class="fa-solid fa-book" aria-hidden="true"></i>
+                    <div>
+                        <h3 id="booksCount">0</h3>
+                        <p>Книги</p>
+                    </div>
+                    <div class="spark spark-purple" aria-hidden="true"></div>
+                </div>
+
+                <div class="card stat-card authors-card" role="group" aria-label="Брой автори">
+                    <i class="fa-solid fa-users" aria-hidden="true"></i>
+                    <div>
+                        <h3 id="authorsCount">0</h3>
+                        <p>Автори</p>
+                    </div>
+                    <div class="spark spark-cyan" aria-hidden="true"></div>
+                </div>
+
+                <div class="card stat-card categories-card" role="group" aria-label="Брой категории">
+                    <i class="fa-solid fa-tags" aria-hidden="true"></i>
+                    <div>
+                        <h3 id="categoriesCount">0</h3>
+                        <p>Категории</p>
+                    </div>
+                    <div class="spark spark-green" aria-hidden="true"></div>
+                </div>
+            </section>
+
+            <section class="content-sections" aria-label="Секции">
+                <section id="section-books" class="card" aria-labelledby="booksTitle">
+                    <div class="card-header card-header--row">
+                        <h3 id="booksTitle">Книги</h3>
+                        <div class="section-actions">
+                            <span class="hint">Tip: <kbd>/</kbd> фокус върху търсене</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <form id="bookForm" class="modern-form" autocomplete="off">
+                            <div class="field">
+                                <label class="sr-only" for="bookTitle">Заглавие</label>
+                                <input type="text" id="bookTitle" placeholder="Заглавие" required />
+                            </div>
+
+                            <div class="field">
+                                <label class="sr-only" for="bookAuthor">Автор</label>
+                                <select id="bookAuthor" required>
+                                    <option value="" disabled selected>Избери автор</option>
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label class="sr-only" for="bookCategory">Категория</label>
+                                <select id="bookCategory" required>
+                                    <option value="" disabled selected>Избери категория</option>
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label class="sr-only" for="bookPrice">Цена</label>
+                                <input type="number" id="bookPrice" placeholder="Цена" step="0.01" min="0" inputmode="decimal" required />
+                            </div>
+
+                            <button type="submit" class="btn-primary">
+                                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                <span>Добави книга</span>
+                            </button>
+                        </form>
+
+                        <div class="table-wrap">
+                            <table id="booksTable">
+                                <caption class="sr-only">Списък с книги</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Заглавие</th>
+                                        <th scope="col">Автор</th>
+                                        <th scope="col">Категория</th>
+                                        <th scope="col">Цена</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+
+                            <p class="empty-state" id="booksEmptyState" hidden>
+                                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                Няма добавени книги.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="section-authors" class="card" aria-labelledby="authorsTitle">
+                    <div class="card-header">
+                        <h3 id="authorsTitle">Автори</h3>
+                    </div>
+
+                    <div class="card-body">
+                        <form id="authorForm" class="modern-form" autocomplete="off">
+                            <div class="field">
+                                <label class="sr-only" for="authorName">Име</label>
+                                <input type="text" id="authorName" placeholder="Име" required />
+                            </div>
+
+                            <div class="field">
+                                <label class="sr-only" for="authorBio">Биография</label>
+                                <input type="text" id="authorBio" placeholder="Биография" />
+                            </div>
+
+                            <button type="submit" class="btn-secondary">
+                                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                <span>Добави автор</span>
+                            </button>
+                        </form>
+
+                        <div class="table-wrap">
+                            <table id="authorsTable">
+                                <caption class="sr-only">Списък с автори</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Име</th>
+                                        <th scope="col">Биография</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+
+                            <p class="empty-state" id="authorsEmptyState" hidden>
+                                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                Няма добавени автори.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="section-categories" class="card" aria-labelledby="categoriesTitle">
+                    <div class="card-header">
+                        <h3 id="categoriesTitle">Категории</h3>
+                    </div>
+
+                    <div class="card-body">
+                        <form id="categoryForm" class="modern-form" autocomplete="off">
+                            <div class="field">
+                                <label class="sr-only" for="categoryName">Име на категория</label>
+                                <input type="text" id="categoryName" placeholder="Име на категория" required />
+                            </div>
+
+                            <button type="submit" class="btn-secondary">
+                                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                <span>Добави категория</span>
+                            </button>
+                        </form>
+
+                        <div class="table-wrap">
+                            <table id="categoriesTable">
+                                <caption class="sr-only">Списък с категории</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Категория</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+
+                            <p class="empty-state" id="categoriesEmptyState" hidden>
+                                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                Няма добавени категории.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="section-profile" class="card" aria-labelledby="profileTitle">
+                    <div class="card-header">
+                        <h3 id="profileTitle">Профил</h3>
+                    </div>
+
+                    <div class="card-body profile-grid">
+                        <div class="profile-item">
+                            <p class="profile-label"><strong>Име</strong></p>
+                            <p class="profile-value" id="profileName"></p>
+                        </div>
+
+                        <div class="profile-item">
+                            <p class="profile-label"><strong>Email</strong></p>
+                            <p class="profile-value" id="profileEmail"></p>
+                        </div>
+
+                        <div class="profile-item">
+                            <p class="profile-label"><strong>Роли</strong></p>
+                            <p class="profile-value" id="profileRoles">—</p>
+                        </div>
+
+                        <div class="profile-item">
+                            <p class="profile-label"><strong>Тема</strong></p>
+                            <p class="profile-value" id="profileTheme">—</p>
+                        </div>
+                    </div>
+                </section>
+            </section>
+        </main>
+    </section>
+
+    <dialog id="helpDialog" class="dialog">
+        <form method="dialog" class="dialog-card">
+            <div class="dialog-head">
+                <div class="dialog-title">
+                    <i class="fa-regular fa-circle-question" aria-hidden="true"></i>
+                    <h3>Помощ & Shortcuts</h3>
+                </div>
+                <button class="icon-btn" value="cancel" aria-label="Затвори">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="dialog-body">
+                <p class="muted">
+                    Малки трикове за по-бърза работа:
+                </p>
+
+                <ul class="shortcuts">
+                    <li><kbd>/</kbd> Фокус върху търсачката</li>
+                    <li><kbd>Esc</kbd> Затваря диалог/махa фокус</li>
+                    <li><kbd>?</kbd> Отваря този прозорец</li>
+                </ul>
+
+                <div class="dialog-actions">
+                    <button class="btn-primary" value="ok" type="submit">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <span>Ясно</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </dialog>
+
+    <script>
+
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabButtons.forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+
+                document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const root = document.documentElement;
+
+        function setTheme(theme) {
+            root.setAttribute('data-theme', theme);
+            localStorage.setItem('bm_theme', theme);
+
+            const icon = themeToggleBtn?.querySelector('i');
+            if (icon) icon.className = theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+
+            const profileTheme = document.getElementById('profileTheme');
+            if (profileTheme) profileTheme.textContent = theme === 'light' ? 'Light' : 'Dark';
+        }
+
+        const savedTheme = localStorage.getItem('bm_theme');
+        if (savedTheme === 'light' || savedTheme === 'dark') setTheme(savedTheme);
+        else setTheme(root.getAttribute('data-theme') || 'dark');
+
+        themeToggleBtn?.addEventListener('click', () => {
+            const current = root.getAttribute('data-theme') || 'dark';
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        });
+
+        // =========== GLOBAL SEARCH (filters current visible table rows) ===========
+        const searchInput = document.getElementById('globalSearch');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+        function getActiveTable() {
+            const hash = window.location.hash || '#section-books';
+            if (hash === '#section-authors') return { table: document.getElementById('authorsTable'), empty: document.getElementById('authorsEmptyState') };
+            if (hash === '#section-categories') return { table: document.getElementById('categoriesTable'), empty: document.getElementById('categoriesEmptyState') };
+            return { table: document.getElementById('booksTable'), empty: document.getElementById('booksEmptyState') };
+        }
+
+        function filterActiveTable(query) {
+            const { table, empty } = getActiveTable();
+            if (!table) return;
+
+            const q = (query || '').trim().toLowerCase();
+            const rows = [...table.querySelectorAll('tbody tr')];
+            let visible = 0;
+
+            rows.forEach(tr => {
+                const txt = (tr.textContent || '').toLowerCase();
+                const show = !q || txt.includes(q);
+                tr.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            if (empty) empty.hidden = rows.length > 0 && visible > 0;
+        }
+
+        function setClearButtonState() {
+            if (!clearSearchBtn || !searchInput) return;
+            clearSearchBtn.style.opacity = searchInput.value ? '1' : '.35';
+            clearSearchBtn.disabled = !searchInput.value;
+        }
+
+        searchInput?.addEventListener('input', (e) => {
+            filterActiveTable(e.target.value);
+            setClearButtonState();
+        });
+
+        clearSearchBtn?.addEventListener('click', () => {
+            if (!searchInput) return;
+            searchInput.value = '';
+            filterActiveTable('');
+            setClearButtonState();
+            searchInput.focus();
+        });
+
+        window.addEventListener('hashchange', () => {
+            // clear search when switching section for a clean feel
+            if (searchInput) searchInput.value = '';
+            filterActiveTable('');
+            setClearButtonState();
+        });
+
+        setClearButtonState();
+
+        document.getElementById('refreshBtn')?.addEventListener('click', async () => {
+            try {
+                if (typeof initData === 'function') await initData();
+            } catch { /* ignore */ }
+        });
+
+        const navLinks = [...document.querySelectorAll('.nav-link')];
+        function syncNavActive() {
+            const hash = window.location.hash || '#section-books';
+            navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === hash));
+        }
+        window.addEventListener('hashchange', syncNavActive);
+        syncNavActive();
+
+        const helpDialog = document.getElementById('helpDialog');
+        const helpBtn = document.getElementById('helpBtn');
+
+        function openHelp() {
+            if (!helpDialog) return;
+            if (typeof helpDialog.showModal === 'function') helpDialog.showModal();
+        }
+        helpBtn?.addEventListener('click', openHelp);
+
+        window.addEventListener('keydown', (e) => {
+            const tag = (document.activeElement?.tagName || '').toLowerCase();
+            const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select';
+
+            if (!isTyping && e.key === '/') {
+                e.preventDefault();
+                searchInput?.focus();
+                return;
+            }
+
+            // "?" -> help
+            if (!isTyping && (e.key === '?' || (e.shiftKey && e.key === '/'))) {
+                e.preventDefault();
+                openHelp();
+                return;
+            }
+
+            // Esc -> blur search
+            if (e.key === 'Escape' && document.activeElement === searchInput) {
+                searchInput.blur();
+            }
+        });
+
+        function tableToCSV(table) {
+            const rows = [...table.querySelectorAll('tr')].map(tr => {
+                const cells = [...tr.querySelectorAll('th, td')].map(td => {
+                    const text = (td.textContent || '').trim().replace(/\s+/g, ' ');
+                    const escaped = '"' + text.replaceAll('"', '""') + '"';
+                    return escaped;
+                });
+                return cells.join(',');
+            });
+            return rows.join('\n');
+        }
+
+        document.getElementById('exportBtn')?.addEventListener('click', () => {
+            const { table } = getActiveTable();
+            if (!table) return;
+
+            const csv = tableToCSV(table);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            const hash = window.location.hash || '#section-books';
+            const name = hash.replace('#section-', '') || 'export';
+            a.href = url;
+            a.download = `bookmanager_${name}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        });
+    </script>
 
     <script src="script.js"></script>
 </body>

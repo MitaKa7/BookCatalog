@@ -1,6 +1,7 @@
 ﻿using BookCatalog.Data;
 using BookCatalog.Models.DTOs;
 using BookCatalog.Models.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,6 +28,7 @@ namespace BookCatalog.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Editor,Admin,Reader")]
         public async Task<IActionResult> Post([FromBody] CategoryDto categoryDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -40,6 +42,7 @@ namespace BookCatalog.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var category = await _context.Categories.FindAsync(id);
